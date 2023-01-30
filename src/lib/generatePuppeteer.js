@@ -7,7 +7,16 @@ export async function createInvoicePdf(data) {
 	const imageUrl = getImageURL(data.company.collectionId, data.company.id, data.company.signature);
 	const image = await encode(imageUrl, { string: true });
 	// Create a browser instance
-	const browser = await puppeteer.launch();
+	// const browser = await puppeteer.launch({
+	// 	dumpio: true,
+	// 	headless: true,
+	// 	executablePath: '/usr/bin/chromium-browser',
+	// 	args: ['--disable-setuid-sandbox', '--no-sandbox', '--disable-gpu']
+	// });
+	const browser = await puppeteer.launch({
+		args: ['--no-sandbox']
+	});
+	//const browser = await puppeteer.launch();
 
 	// Create a new page
 	const page = await browser.newPage();
@@ -27,6 +36,7 @@ export async function createInvoicePdf(data) {
 	});
 
 	// Close the browser instance
+	await page.close();
 	await browser.close();
 
 	return pdf;

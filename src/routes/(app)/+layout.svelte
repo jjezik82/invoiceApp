@@ -1,28 +1,28 @@
 <script>
 	import { getImageURL } from '$lib/utils';
 	import { page } from '$app/stores';
-	import '../app.postcss';
+	import '../../app.postcss';
 	export let data;
 
 	const navigation = [
 		{
-			title: 'Dashboard',
+			title: 'Domov',
 			href: '/'
 		},
 		{
-			title: 'Company details',
+			title: 'Firemné údaje',
 			href: '/my/company'
 		},
 		{
-			title: 'Customers',
+			title: 'Zákazníci',
 			href: '/my/customers'
 		},
 		{
-			title: 'Invoices',
+			title: 'Faktúry',
 			href: '/my/invoices'
 		},
 		{
-			title: 'Settings',
+			title: 'Nastavenia',
 			href: '/my/settings'
 		}
 	];
@@ -31,7 +31,7 @@
 <div class="min-h-full">
 	<nav class="navbar bg-base-100 border-b">
 		<div class="flex-1">
-			<a href="/" class="btn btn-ghost normal-case text-xl">invoiceApp</a>
+			<a href="/" class="btn btn-ghost normal-case text-xl">fakTurista</a>
 		</div>
 		<div class="flex-none">
 			{#if !data.user}
@@ -63,7 +63,7 @@
 						{/each}
 						<li>
 							<form action="/logout" method="post">
-								<button type="submit" class="w-full text-start">Logout</button>
+								<button type="submit" class="w-full text-start">Odhlásiť sa</button>
 							</form>
 						</li>
 					</ul>
