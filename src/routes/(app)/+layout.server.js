@@ -19,14 +19,12 @@ export const load = ({ locals }) => {
 		};
 
 		const checkUserCounters = async (userId) => {
-			const year = new Date().getFullYear();
+			const year = new Date().getFullYear().toString();
 
 			try {
-				await locals.pb
-					.collection('counters')
-					.getFirstListItem(`user="${userId}"`, { filter: `year=${year}` });
-			} catch (error) {
-				if (error.status === 404) {
+				await locals.pb.collection('counters').getFirstListItem(`user="${userId}" && year=${year}`);
+			} catch (err) {
+				if (err.status === 404) {
 					const counterData = {
 						user: userId,
 						year: year,

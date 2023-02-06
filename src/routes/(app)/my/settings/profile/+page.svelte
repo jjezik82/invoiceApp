@@ -4,6 +4,7 @@
 	import { Icon, Pencil } from 'svelte-hero-icons';
 	import { Input } from '$lib/components';
 	import { getImageURL } from '$lib/utils';
+	import toast from 'svelte-french-toast';
 
 	export let data;
 	let loading;
@@ -25,6 +26,7 @@
 		return async ({ result }) => {
 			switch (result.type) {
 				case 'success':
+					toast.success('Profilové údaje boli úspešne uložené.');
 					await invalidateAll();
 					break;
 				case 'error':
@@ -45,10 +47,10 @@
 		enctype="multipart/form-data"
 		use:enhance={submitUpdateProfile}
 	>
-		<h3 class="text-2xl font-medium">Update Profile</h3>
+		<h3 class="text-2xl font-medium">Upraviť profil</h3>
 		<div class="form-control w-full max-w-lg">
 			<label for="avatar" class="label font-medium pb-1">
-				<span class="label-text"> Profile Picture </span>
+				<span class="label-text"> Avatar </span>
 			</label>
 			<label for="avatar" class="avatar w-32 rounded-full hover:cursor-pointer">
 				<label for="avatar" class="absolute -bottom-0.5 -right-0.5 hover:cursor-pointer">
@@ -77,10 +79,19 @@
 				disabled={loading}
 			/>
 		</div>
-		<Input id="name" label="Name" value={data?.user?.name} disabled={loading} />
+		<Input
+			id="email"
+			type="email"
+			label="Emailová adresa"
+			required={true}
+			value={data?.user?.email}
+			disabled
+		/>
+		<Input id="username" label="Prihlasovacie meno" value={data?.user?.username} disabled />
+		<Input id="name" label="Meno" value={data?.user?.name} disabled={loading} />
 		<div class="w-full max-w-lg pt-3">
 			<button class="btn btn-primary w-full max-w-lg" type="submit" disabled={loading}>
-				Update profile
+				Upraviť profil
 			</button>
 		</div>
 	</form>

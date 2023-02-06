@@ -1,6 +1,8 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { serializeNonPOJOs } from '$lib/utils';
 import { createInvoicePdf } from '$lib/generatePuppeteer';
+import { invoiceSchema } from '$lib/schemas';
+import { validateData } from '$lib/utils';
 import dayjs from 'dayjs';
 
 export const load = async ({ locals }) => {
@@ -14,9 +16,9 @@ export const load = async ({ locals }) => {
 				await locals.pb.collection('companies').getFirstListItem(`user="${userId}"`)
 			);
 			return company;
-		} catch (error) {
-			console.log('Error:', error);
-			throw error(error.status, error.message);
+		} catch (err) {
+			console.log('Error:', err);
+			throw error(err.status, err.message);
 		}
 	};
 
@@ -28,25 +30,23 @@ export const load = async ({ locals }) => {
 					.getFullList(undefined, { filter: `user="${userId}"` })
 			);
 			return customers;
-		} catch (error) {
-			console.log('Error:', error);
-			throw error(error.status, error.message);
+		} catch (err) {
+			console.log('Error:', err);
+			throw error(err.status, err.message);
 		}
 	};
 
 	const getUserCounter = async (userId) => {
-		const year = new Date().getFullYear();
+		const year = new Date().getFullYear().toString();
 
 		try {
 			const counter = serializeNonPOJOs(
-				await locals.pb
-					.collection('counters')
-					.getFirstListItem(`user="${userId}"`, { filter: `year=${year}` })
+				await locals.pb.collection('counters').getFirstListItem(`user="${userId}" && year=${year}`)
 			);
 			return counter;
-		} catch (error) {
-			console.log('Error:', error);
-			throw error(error.status, error.message);
+		} catch (err) {
+			console.log('Error:', err);
+			throw error(err.status, err.message);
 		}
 	};
 
@@ -59,7 +59,14 @@ export const load = async ({ locals }) => {
 
 export const actions = {
 	create: async ({ request, locals }) => {
-		const formData = await request.formData();
+		const { formData, errors } = await validateData(await request.formData(), invoiceSchema);
+
+		if (errors) {
+			return fail(400, {
+				data: formData,
+				errors
+			});
+		}
 
 		const getUserCompany = async (companyId) => {
 			try {
@@ -67,9 +74,9 @@ export const actions = {
 					await locals.pb.collection('companies').getOne(companyId)
 				);
 				return company;
-			} catch (error) {
-				console.log('Error:', error);
-				throw error(error.status, error.message);
+			} catch (err) {
+				console.log('Error:', err);
+				throw error(err.status, err.message);
 			}
 		};
 		const getUserCustomer = async (customerId) => {
@@ -78,59 +85,56 @@ export const actions = {
 					await locals.pb.collection('customers').getOne(customerId)
 				);
 				return customer;
-			} catch (error) {
-				console.log('Error:', error);
-				throw error(error.status, error.message);
+			} catch (err) {
+				console.log('Error:', err);
+				throw error(err.status, err.message);
 			}
 		};
 
 		const pdfData = {
 			form: {
 				invoice: {
-					vs: formData.get('variable_symbol'),
-					date_now: formData.get('date'),
-					date_payment: formData.get('date_payment'),
-					items: formData.get('items'),
-					total_price: formData.get('total_price')
+					vs: formData.variable_symbol,
+					date_now: formData.date,
+					date_payment: formData.date_payment,
+					items: formData.items,
+					total_price: formData.total_price
 				}
 			},
-			company: await getUserCompany(formData.get('companyId')),
-			customer: await getUserCustomer(formData.get('customerId'))
+			company: await getUserCompany(formData.companyId),
+			customer: await getUserCustomer(formData.customerId)
 		};
 
 		const pdf = new Blob([await createInvoicePdf(pdfData)]);
 
-		const counterId = formData.get('counterId');
+		const counterId = formData.counterId;
 		const counterData = {
-			number: +formData.get('vs_counter') + 1
+			number: +formData.vs_counter + 1
 		};
-
-		const datePayment = dayjs(formData.get('date_payment')).format('YYYY-MM-DD HH:mm:ss');
+		const datePayment = dayjs(formData.date_payment).format('YYYY-MM-DD HH:mm:ss');
 
 		const invoiceFD = new FormData();
+		invoiceFD.append('variable_symbol', formData.variable_symbol);
 		invoiceFD.append('date_payment', datePayment);
-		invoiceFD.append('due_day', formData.get('due_day'));
-		invoiceFD.append('items', formData.get('items'));
-		invoiceFD.append('total_price', formData.get('total_price'));
-		invoiceFD.append('variable_symbol', formData.get('variable_symbol'));
+		invoiceFD.append('due_day', formData.due_day);
+		invoiceFD.append('items', JSON.stringify(formData.items));
+		invoiceFD.append('total_price', formData.total_price);
 		invoiceFD.append('user', locals.user.id);
-		invoiceFD.append('company', formData.get('companyId'));
-		invoiceFD.append('customer', formData.get('customerId'));
+		invoiceFD.append('company', formData.companyId);
+		invoiceFD.append('customer', formData.customerId);
 		invoiceFD.append('invoice_pdf', pdf, 'invoice');
 
 		try {
 			await locals.pb.collection('invoices').create(invoiceFD);
-		} catch (error) {
-			console.log('Error:', error);
-			throw error(error.status, error.message);
+		} catch (err) {
+			console.log('Error:', err);
+			throw error(err.status, err.message);
 		}
 		try {
 			await locals.pb.collection('counters').update(counterId, counterData);
-		} catch (error) {
-			console.log('Error:', error);
-			throw error(error.status, error.message);
+		} catch (err) {
+			console.log('Error:', err);
+			throw error(err.status, err.message);
 		}
-
-		throw redirect(303, '/my/invoices');
 	}
 };

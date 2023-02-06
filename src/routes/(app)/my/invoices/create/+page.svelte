@@ -1,19 +1,60 @@
 <script>
-	import { Input } from '$lib/components';
-	import { Icon, Trash, Plus } from 'svelte-hero-icons';
+	import {
+		Input,
+		CustomerSelect,
+		CompanyInfo,
+		CustomerInfo,
+		Select,
+		DateInput,
+		Repeater,
+		Modal
+	} from '$lib/components';
 	import { createVariableSymbol } from '$lib/utils';
+	import { activePageStore } from '$lib/store';
+	import { enhance } from '$app/forms';
+	import { invalidateAll, goto } from '$app/navigation';
+	import toast from 'svelte-french-toast';
+
 	export let data;
+	export let form;
 	let selectedCustomerId;
 	let selectedCustomer;
+	let variableSymbol;
 	let paymentDay = 14;
 	let now = new Date().toISOString().split('T')[0];
 	let paymentDate;
-	let days = [...Array(31).keys()];
-	let totalPrice = 0;
-	let itemInputs = [{ title: '', count: 0, per_price: 0, price: 0 }];
-	let items;
-	let variableSymbol = createVariableSymbol(data.counter.year, data.counter.number);
+	let days = [...Array(32).keys()].map((e) => ({
+		value: e,
+		title: e
+	}));
+	let modalOpen;
+	$: modalOpen = data?.company?.name === '' || (data?.company?.name === undefined && false);
 
+	let loading = false;
+
+	const submitCreateInvoice = () => {
+		loading = true;
+		return async ({ result, update }) => {
+			switch (result.type) {
+				case 'success':
+					await invalidateAll();
+					toast.success('Nová faktúra úspešne vytvorená.');
+					goto('/my/invoices');
+					break;
+				case 'error':
+					break;
+				default:
+					await update();
+			}
+			loading = false;
+		};
+	};
+
+	variableSymbol = createVariableSymbol(data.counter.year, data.counter.number).toString();
+
+	activePageStore.update(() => {
+		return 'invoices';
+	});
 	function addDays(date, days) {
 		var result = new Date(date);
 		result.setDate(result.getDate() + days);
@@ -26,25 +67,7 @@
 	const calculatePaymentDay = (days) => {
 		paymentDate = addDays(now, days).toISOString().split('T')[0];
 	};
-	function addItem() {
-		itemInputs = itemInputs.concat({ title: '', count: 0, per_price: 0, price: 0 });
-	}
-	function removeItem(i) {
-		itemInputs = itemInputs.filter((el, index) => index !== i);
-		totalPrice = itemInputs.reduce(function (a, b) {
-			return a + b['price'];
-		}, 0);
-	}
 
-	function countPrice(i) {
-		const item = itemInputs[i];
-		itemInputs[i].price = item.count * item.per_price;
-		totalPrice = itemInputs.reduce(function (a, b) {
-			return a + b['price'];
-		}, 0);
-	}
-
-	$: items = JSON.stringify(itemInputs);
 	$: findSelectedCustomer(selectedCustomerId);
 	$: calculatePaymentDay(paymentDay);
 </script>
@@ -56,80 +79,24 @@
 			method="post"
 			class="flex flex-col space-y-2 w-full items-center"
 			enctype="multipart/form-data"
+			novalidate
+			use:enhance={submitCreateInvoice}
 		>
 			<div class="flex flex-row w-full flex-wrap justify-start pt-10 relative">
-				<h3 class="text-3xl font-bold">Create a new invoice #{variableSymbol}</h3>
+				<h3 class="text-3xl font-bold">Vytvoriť novú faktúru: #{variableSymbol}</h3>
 				<div class="pt-3 absolute right-0 bottom-0">
-					<button type="submit" class="btn btn-primary w-full max-w-lg">Create</button>
+					<button type="submit" class="btn btn-primary w-full max-w-lg">Vytvoriť</button>
 				</div>
 			</div>
 			<div class="flex flex-row w-full flex-wrap justify-start py-10">
+				<CompanyInfo company={data?.company} />
 				<div class="flex-auto w-1/2 px-3">
-					<div class="card max-w-lg bg-base-100 shadow-xl">
-						<div class="card-body">
-							<div class="flex flex-row w-full flex-wrap">
-								<div class="flex-auto w-full">
-									<h2 class="card-title text-2xl">Company</h2>
-								</div>
-								<div class="flex-auto w-1/2">
-									<p class="text-xl font-bold mt-2">{data.company.name}</p>
-									<p>{data.company.address}</p>
-									<p>{data.company.postcode} {data.company.city}</p>
-									<p>{data.company.country}</p>
-									<p class="mt-2">Telefón: {data.company.phone}</p>
-									<p>Email: {data.company.email}</p>
-									<p>Vystavil: {data.company.person}</p>
-								</div>
-								<div class="flex-auto w-1/2 pl-6">
-									<p class="mt-8">IČO: {data.company.ico}</p>
-									<p>DIČ: {data.company.dic}</p>
-									{#if data.company.ic_dph}
-										<p>IČ DPH: {data.company.ic_dph}</p>
-									{:else}
-										<p>Nie je platiteľ DPH</p>
-									{/if}
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="flex-auto w-1/2 px-3">
-					<div class="w-full">
-						<p class="text-2xl font-bold inline mr-3">Customer:</p>
-						<select
-							name="customerId"
-							class="select select-bordered w-full max-w-xs select-sm"
-							bind:value={selectedCustomerId}
-						>
-							<option disabled selected>Select</option>
-							{#each data.customers as customer}
-								<option value={customer.id}>{customer.name}</option>
-							{/each}
-						</select>
-					</div>
-					{#if selectedCustomer}
-						<div class="card max-w-lg bg-base-100 shadow-xl mt-6">
-							<div class="card-body">
-								<div class="flex flex-row w-full flex-wrap">
-									<div class="flex-auto w-1/2">
-										<h2 class="card-title">{selectedCustomer?.name}</h2>
-										<p>{selectedCustomer?.address}</p>
-										<p>{selectedCustomer?.postcode} {selectedCustomer?.city}</p>
-										<p>{selectedCustomer?.country}</p>
-									</div>
-									<div class="flex-auto w-1/2 pl-6">
-										<p class="mt-2">IČO: {selectedCustomer?.ico}</p>
-										<p>DIČ: {selectedCustomer?.dic}</p>
-										{#if selectedCustomer?.ic_dph}
-											<p>IČ DPH: {selectedCustomer?.ic_dph}</p>
-										{:else}
-											<p>Nie je platiteľ DPH</p>
-										{/if}
-									</div>
-								</div>
-							</div>
-						</div>
-					{/if}
+					<CustomerSelect
+						bind:value={selectedCustomerId}
+						error={form?.errors?.customerId}
+						customers={data?.customers}
+					/>
+					<CustomerInfo {selectedCustomer} />
 				</div>
 			</div>
 			<div class="divider" />
@@ -150,31 +117,31 @@
 								calculatePaymentDay(paymentDay);
 							}}
 						/>
+						{#if form?.errors?.date}
+							<label for="date" class="label py-0 pt-1">
+								<span class="label-text-alt text-error">
+									{form?.errors?.date}
+								</span>
+							</label>
+						{/if}
 					</div>
 				</div>
 				<div class="flex-auto w-1/4 px-3">
-					<label for="due_day" class="label font-medium pb-1">
-						<span class="label-text">Splatnosť (dni)</span>
-					</label>
-					<select
-						name="due_day"
-						id="due_day"
-						class="select select-bordered w-full"
+					<Select
+						label={'Splatnosť (dni)'}
+						id={'due_day'}
 						bind:value={paymentDay}
-					>
-						<option disabled selected>Select</option>
-						{#each days as day}
-							<option value={day}>{day}</option>
-						{/each}
-					</select>
+						options={days}
+						error={undefined}
+					/>
 				</div>
 				<div class="flex-auto w-1/4 px-3">
-					<Input
-						type="date"
+					<DateInput
 						readonly
 						id="date_payment"
 						label="Dátum splatnosti"
 						value={paymentDate}
+						error={form?.errors?.date_payment}
 					/>
 				</div>
 				<div class="flex-auto w-1/4 px-3">
@@ -183,110 +150,27 @@
 						id="variable_symbol"
 						label="Variabilný symbol"
 						value={variableSymbol}
+						error={form?.errors?.variable_symbol}
 					/>
 					<input type="hidden" name="vs_counter" value={data.counter.number} />
 					<input type="hidden" name="counterId" value={data.counter.id} />
 				</div>
 			</div>
-			<div class="divider" />
-			<input type="hidden" name="items" bind:value={items} />
-			{#each itemInputs as item, i}
-				<div class="flex flex-row w-full flex-wrap justify-start">
-					<div class="flex-initial w-5/12 px-3">
-						<div class="form-control w-full mb-2">
-							<label for="title-{i}" class="label font-medium pb-1">
-								<span class="label-text">Názov položky</span>
-							</label>
-							<input
-								class="input input-bordered w-full"
-								type="text"
-								id="title-{i}"
-								name="title-{i}"
-								bind:value={item.title}
-							/>
-						</div>
-					</div>
-					<div class="flex-initial w-2/12 px-3">
-						<div class="form-control w-full mb-2">
-							<label for="count-{i}" class="label font-medium pb-1">
-								<span class="label-text">Počet</span>
-							</label>
-							<input
-								class="input input-bordered w-full"
-								type="number"
-								id="count-{i}"
-								name="count-{i}"
-								bind:value={item.count}
-								step="0.01"
-								min="0"
-								on:input={(e) => countPrice(i)}
-							/>
-						</div>
-					</div>
-					<div class="flex-initial w-2/12 px-3">
-						<div class="form-control w-full mb-2">
-							<label for="per_price-{i}" class="label font-medium pb-1">
-								<span class="label-text">Jedn.cena</span>
-							</label>
-							<input
-								class="input input-bordered w-full"
-								type="number"
-								id="per_price-{i}"
-								name="per_price-{i}"
-								bind:value={item.per_price}
-								step="0.01"
-								min="0"
-								on:input={(e) => countPrice(i)}
-							/>
-						</div>
-					</div>
-					<div class="flex-initial w-2/12 px-3">
-						<div class="form-control w-full mb-2">
-							<label for="price-{i}" class="label font-medium pb-1">
-								<span class="label-text">Cena spolu (€)</span>
-							</label>
-							<input
-								class="input input-bordered w-full"
-								type="number"
-								id="price-{i}"
-								name="price-{i}"
-								step="0.01"
-								readonly
-								bind:value={item.price}
-							/>
-						</div>
-					</div>
-					<div class="flex-initial w-1/12 flex items-end px-3">
-						{#if i !== 0}
-							<button
-								type="button"
-								id="trash-{i}"
-								class="btn btn-error mb-2"
-								on:click={() => removeItem(i)}
-							>
-								<Icon src={Trash} class="w-5 h-5 text-white" />
-							</button>
-						{/if}
-					</div>
-				</div>
-			{/each}
-			<div class="flex flex-row w-full flex-wrap justify-start">
-				<div class="flex-auto flex items-end justify-center px-3 w-full">
-					<button type="button" class="btn btn-success mb-2" on:click={addItem}>
-						<Icon src={Plus} class="w-5 h-5 text-white" />
-					</button>
-				</div>
-			</div>
-			<div class="divider" />
-			<div class="flex flex-row w-full justify-end flex-wrap pb-10">
-				<input type="hidden" name="total_price" bind:value={totalPrice} />
-				<h3 class="text-3xl font-bold mr-5">Total Price: {totalPrice} €</h3>
-			</div>
+			<Repeater errors={form?.errors} />
 			<div class="flex flex-row w-full justify-end flex-wrap pb-16">
 				<div>
-					<button type="submit" class="btn btn-primary w-full max-w-lg">Create</button>
+					<button type="submit" class="btn btn-primary w-full max-w-lg">Vytvoriť</button>
 				</div>
 			</div>
 		</form>
 	</div>
 </div>
+<Modal label="companyExists" checked={modalOpen}>
+	<div slot="heading">
+		<h3 class="text-2xl break-normal">Nemáte kompletne vyplnené firemné údaje!</h3>
+		<p class="text-base font-normal mt-2">Prosím doplňte si ich.</p>
+	</div>
+	<div class="flex w-full items-center justify-center space-x-2" slot="actions">
+		<a href="/my/company" class="btn btn-error"> TU </a>
+	</div>
+</Modal>

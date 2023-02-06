@@ -1,5 +1,5 @@
 export async function getTemplate(data, image) {
-	const itemObjects = JSON.parse(data.form.invoice.items);
+	const itemObjects = data.form.invoice.items;
 	const items = itemObjects
 		.map(
 			(i) =>

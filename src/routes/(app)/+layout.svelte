@@ -2,36 +2,53 @@
 	import { getImageURL } from '$lib/utils';
 	import { page } from '$app/stores';
 	import '../../app.postcss';
+	import { Toaster } from 'svelte-french-toast';
+	import { activePageStore } from '$lib/store';
+
+	let activePage;
+	activePageStore.subscribe((data) => {
+		activePage = data;
+	});
+
 	export let data;
 
 	const navigation = [
 		{
 			title: 'Domov',
-			href: '/'
+			href: '/',
+			id: 'home'
 		},
 		{
 			title: 'Firemné údaje',
-			href: '/my/company'
+			href: '/my/company',
+			id: 'company'
 		},
 		{
 			title: 'Zákazníci',
-			href: '/my/customers'
+			href: '/my/customers',
+			id: 'customers'
 		},
 		{
 			title: 'Faktúry',
-			href: '/my/invoices'
+			href: '/my/invoices',
+			id: 'invoices'
 		},
 		{
 			title: 'Nastavenia',
-			href: '/my/settings'
+			href: '/my/settings',
+			id: 'settings'
 		}
 	];
 </script>
 
+<Toaster />
 <div class="min-h-full">
 	<nav class="navbar bg-base-100 border-b">
 		<div class="flex-1">
-			<a href="/" class="btn btn-ghost normal-case text-xl">fakTurista</a>
+			<a href="/" class="btn btn-ghost normal-case text-xl">
+				<img class="max-h-12" src="/fakturista.png" alt="logo" />
+				<h2 class="text-2xl">FAKTURISTA</h2>
+			</a>
 		</div>
 		<div class="flex-none">
 			{#if !data.user}
@@ -44,7 +61,7 @@
 					<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
 					<!-- svelte-ignore a11y-label-has-associated-control -->
 					<label tabindex="0" class="btn-btn-ghost btn-circle avatar">
-						<div class="w-10 rounded-full">
+						<div class="rounded-full">
 							<img
 								src={data.user?.avatar
 									? getImageURL(data.user?.collectionId, data.user?.id, data.user?.avatar)
@@ -72,7 +89,7 @@
 		</div>
 	</nav>
 
-	<div class="drawer drawer-mobile">
+	<div class="drawer drawer-mobile app-height">
 		<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 		<div class="drawer-content flex flex-col items-center justify-start">
 			<slot />
@@ -84,9 +101,7 @@
 				<!-- Sidebar content here -->
 				{#each navigation as navItem}
 					<li>
-						<a
-							href={navItem.href}
-							class="font-medium {$page.url.pathname === navItem.href ? 'active' : ''}"
+						<a href={navItem.href} class="font-medium {activePage === navItem.id ? 'active' : ''}"
 							>{navItem.title}</a
 						>
 					</li>
@@ -97,7 +112,13 @@
 </div>
 <footer class="footer footer-center p-4 bg-gray-600 text-white">
 	<div>
-		<p>Copyright © 2023 - All right reserved by jjezik</p>
+		<p>Copyright © 2023 - All right reserved by Fakturista</p>
 	</div>
 </footer>
 <div id="modals" />
+
+<style>
+	.app-height {
+		max-height: calc(100vh - 123px);
+	}
+</style>

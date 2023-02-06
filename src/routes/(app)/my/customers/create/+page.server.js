@@ -1,4 +1,6 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
+import { customerSchema } from '$lib/schemas';
+import { validateData } from '$lib/utils';
 
 export const load = async ({ locals }) => {
 	if (!locals.pb.authStore.isValid) {
@@ -8,17 +10,22 @@ export const load = async ({ locals }) => {
 
 export const actions = {
 	create: async ({ request, locals }) => {
-		const formData = await request.formData();
+		const { formData, errors } = await validateData(await request.formData(), customerSchema);
 
-		formData.append('user', locals.user.id);
+		if (errors) {
+			return fail(400, {
+				data: formData,
+				errors
+			});
+		}
+
+		formData.user = locals.user.id;
 
 		try {
 			await locals.pb.collection('customers').create(formData);
-		} catch (error) {
-			console.log('Error:', error);
-			throw error(error.status, error.message);
+		} catch (err) {
+			console.log('Error:', err);
+			throw error(err.status, err.message);
 		}
-
-		throw redirect(303, '/my/customers');
 	}
 };

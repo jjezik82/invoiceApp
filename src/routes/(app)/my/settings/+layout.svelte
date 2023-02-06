@@ -1,23 +1,24 @@
 <script>
 	import { page } from '$app/stores';
+	import { activePageStore } from '$lib/store';
+
+	activePageStore.update(() => {
+		return 'settings';
+	});
 	const navigation = [
 		{
-			title: 'Profile',
+			title: 'Profil',
 			href: '/my/settings/profile'
 		},
 		{
-			title: 'Account',
-			href: '/my/settings/account'
-		},
-		{
-			title: 'Security',
+			title: 'Heslá',
 			href: '/my/settings/security'
 		}
 	];
 </script>
 
 <div class="w-full px-2 pt-5">
-	<h3 class="text-2xl font-medium">Settings</h3>
+	<h3 class="text-2xl font-medium">Nastavenia</h3>
 	<div class="divider" />
 </div>
 <div class="flex w-full h-full space-x-4">

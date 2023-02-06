@@ -1,8 +1,16 @@
 <script>
 	import { enhance, applyAction } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { Input } from '$lib/components';
+	import { activePageStore } from '$lib/store';
+	import toast from 'svelte-french-toast';
 	export let data;
+	export let form;
+
+	activePageStore.update(() => {
+		return 'customers';
+	});
+
 	let loading;
 
 	$: loading = false;
@@ -13,6 +21,8 @@
 			switch (result.type) {
 				case 'success':
 					await invalidateAll();
+					toast.success('Údaje zákazníka boli úspešne uložené.');
+					goto('/my/customers');
 					break;
 				case 'error':
 					break;
@@ -33,38 +43,73 @@
 			use:enhance={submitUpdateCustomer}
 		>
 			<div class="flex flex-row w-full flex-wrap justify-center pt-10 relative">
-				<h3 class="text-3xl font-bold">Update {data?.customer?.name}</h3>
+				<h3 class="text-3xl font-bold">Upraviť firmu: {data?.customer?.name}</h3>
 				<div class="pt-3 absolute right-0 bottom-0">
-					<button type="submit" class="btn btn-primary w-full max-w-lg">Update</button>
+					<button type="submit" class="btn btn-primary w-full max-w-lg">Upraviť</button>
 				</div>
 			</div>
 			<div class="flex flex-row w-full flex-wrap justify-start pt-10">
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="name" label="Company name" value={data?.customer?.name} />
+					<Input
+						id="name"
+						label="Názov firmy"
+						error={form?.errors?.name}
+						value={form?.data?.name ?? data?.customer?.name}
+					/>
 				</div>
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="email" label="Email" value={data?.customer?.email} />
+					<Input
+						id="email"
+						label="Email"
+						error={form?.errors?.email}
+						value={form?.data?.email ?? data?.customer?.email}
+					/>
 				</div>
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="address" label="Address" value={data?.customer?.address} />
+					<Input
+						id="address"
+						label="Adresa"
+						error={form?.errors?.address}
+						value={form?.data?.address ?? data?.customer?.address}
+					/>
 				</div>
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="postcode" label="Postcode" value={data?.customer?.postcode} />
+					<Input
+						id="postcode"
+						label="PSČ"
+						error={form?.errors?.postcode}
+						value={form?.data?.postcode ?? data?.customer?.postcode}
+					/>
 				</div>
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="city" label="City" value={data?.customer?.city} />
+					<Input id="city" label="Mesto" error={form?.errors?.city} value={data?.customer?.city} />
 				</div>
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="country" label="Country" value={data?.customer?.country} />
+					<Input
+						id="country"
+						label="Krajina"
+						error={form?.errors?.country}
+						value={form?.data?.country ?? data?.customer?.country}
+					/>
 				</div>
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="ico" label="IČO" value={data?.customer?.ico} />
+					<Input
+						id="ico"
+						label="IČO"
+						error={form?.errors?.ico}
+						value={form?.data?.ico ?? data?.customer?.ico}
+					/>
 				</div>
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="dic" label="DIČ" value={data?.customer?.dic} />
+					<Input
+						id="dic"
+						label="DIČ"
+						error={form?.errors?.dic}
+						value={form?.data?.dic ?? data?.customer?.dic}
+					/>
 				</div>
 				<div class="flex-auto w-1/3 px-3">
-					<Input id="ic_dph" label="IČ DPH" value={data?.customer?.ic_dph} />
+					<Input id="ic_dph" label="IČ DPH" value={form?.data?.ic_dph ?? data?.customer?.ic_dph} />
 				</div>
 			</div>
 		</form>

@@ -1,44 +1,58 @@
 <script>
+	import { enhance, applyAction } from '$app/forms';
+	import { goto } from '$app/navigation';
+	import { Input } from '$lib/components';
+	import toast from 'svelte-french-toast';
 	export let form;
+	let loading;
+	$: loading = false;
+
+	const submitReset = () => {
+		loading = true;
+		return async ({ result }) => {
+			switch (result.type) {
+				case 'success':
+					toast.success('Odoslali sme Vám email pre obnovu hesla', {
+						duration: 6000
+					});
+					goto('/login');
+					break;
+				case 'error':
+					toast.error(result.error.message, { duration: 6000 });
+					break;
+				default:
+					await applyAction(result);
+			}
+			loading = false;
+		};
+	};
 </script>
 
-<div class="flex flex-col items-center h-full w-full mt-32">
-	<h2 class="mt-2 text-center text-3xl font-bold tracking-tight text-base-content">
-		Reset Your Password
-	</h2>
-	<p class="text-center mt-1">We'll send you an email with link to reset your password.</p>
-	<form
-		action="?/resetPassword"
-		method="post"
-		class="flex flex-col items-center space-y-2 w-full pt-4"
-	>
-		<div class="form-control w-full max-w-md">
-			<label for="email" class="label font-medium pb-1">
-				<span class="label-text">Email</span>
-			</label>
-			<input type="email" name="email" class="input input-bordered w-full max-w-md" />
-		</div>
-		<div class="w-full max-w-md pt-2">
-			<button type="submit" class="btn btn-primary w-full">Request password reset</button>
-		</div>
-		{#if form?.success}
-			<div class="alert alert-success shadow-lg w-full max-w-md">
-				<div>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="stroke-current flex-shrink-0 h-6 w-6"
-						fill="none"
-						viewBox="0 0 24 24"
-						><path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-						/></svg
-					>
-					<span>An email has been sent to reset your password</span>
+<div class="hero-content flex-col lg:flex-row-reverse">
+	<div class="text-center lg:text-left">
+		<h1 class="text-5xl font-bold text-white">Obnovte si svoje heslo</h1>
+		<p class="py-6 text-white">Pošleme vám email s linkom na obnovu hesla.</p>
+	</div>
+	<div class="card flex-shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
+		<div class="card-body">
+			<form
+				action="?/resetPassword"
+				method="post"
+				class="flex flex-col items-center space-y-2 w-full pt-4"
+				novalidate
+				use:enhance={submitReset}
+			>
+				<Input
+					type="email"
+					id="email"
+					label="Email"
+					value={form?.data?.email ?? ''}
+					error={form?.errors?.email}
+				/>
+				<div class="w-full max-w-lg pt-2">
+					<button type="submit" class="btn btn-primary w-full">Požiadať o obnovu hesla</button>
 				</div>
-			</div>
-		{/if}
-	</form>
+			</form>
+		</div>
+	</div>
 </div>
