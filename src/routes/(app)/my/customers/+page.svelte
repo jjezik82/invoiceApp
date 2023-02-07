@@ -12,18 +12,16 @@
 		return 'customers';
 	});
 	let loading;
-	let modalOpen;
-	$: modalOpen = false;
 	$: loading = false;
 
-	const submitDeleteCustomer = () => {
+	const submitDeleteCustomer = ({ data }) => {
 		loading = true;
-		modalOpen = true;
+		const { customerId } = Object.fromEntries(data);
+		document.getElementById(customerId).checked = false;
 		return async ({ result }) => {
 			switch (result.type) {
 				case 'success':
 					await invalidateAll();
-					modalOpen = false;
 					toast.success('Zákazník bol úspešne vymazaný.');
 					break;
 				case 'error':
@@ -87,7 +85,7 @@
 											<Icon src={Pencil} class="w-5 h-5 text-white" />
 										</a>
 
-										<Modal label={customer.id} checked={modalOpen}>
+										<Modal label={customer.id} checked={false}>
 											<span slot="trigger" class="btn btn-error btn-sm btn-circle">
 												<Icon src={Trash} class="w-5 h-5 text-white" />
 											</span>

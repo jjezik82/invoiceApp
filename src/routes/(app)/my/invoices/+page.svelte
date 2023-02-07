@@ -13,18 +13,16 @@
 		return 'invoices';
 	});
 	let loading;
-	// let modalOpen;
-	// $: modalOpen = false;
 	$: loading = false;
 
-	const submitDeleteCustomer = () => {
+	const submitDeleteCustomer = ({ data }) => {
 		loading = true;
-		// modalOpen = true;
+		const { invoiceId } = Object.fromEntries(data);
+		document.getElementById(invoiceId).checked = false;
 		return async ({ result }) => {
 			switch (result.type) {
 				case 'success':
 					await invalidateAll();
-					// modalOpen = false;
 					toast.success('Faktúra bola úspešne vymazaná.');
 					break;
 				case 'error':
